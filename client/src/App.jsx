@@ -1,20 +1,529 @@
 
 import React, { useCallback, useEffect, useState } from "react";
-import "./App.css";
 
 const API = "http://localhost:5000";
-const DEMO_URL = `${API}/shop`;
 
-function getDashboardSessionId() {
+const styles = `
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  background: #0b1020;
+  color: #f1f5f9;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+}
+
+button, input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible, input:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 3px;
+}
+
+.dashboard {
+  min-height: 100vh;
+  width: 100%;
+  background: #0b1020;
+}
+
+.container {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 28px 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #4f46e5;
+  font-size: 24px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -.5px;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a7f3d0;
+  margin-right: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: #e2e8f0;
+  background: #172033;
+  font-weight: 650;
+  transition: background .2s, transform .2s;
+}
+
+.btn:hover {
+  background: #263249;
+}
+
+.btn:active {
+  transform: scale(.98);
+}
+
+.btn-primary {
+  color: white;
+  background: #6258ed;
+  border-color: #6258ed;
+}
+
+.btn-primary:hover {
+  background: #4f46e5;
+}
+
+.btn:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 22px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 27px;
+  letter-spacing: -.5px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  min-width: 0;
+  padding: 23px;
+  border: 1px solid #26334b;
+  border-radius: 16px;
+  background: #141c30;
+}
+
+.stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-label {
+  color: #a5b4cc;
+  font-weight: 550;
+}
+
+.stat-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #252b4c;
+  font-size: 19px;
+}
+
+.stat-value {
+  margin-top: 20px;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+}
+
+.stat-note {
+  margin-top: 8px;
+  color: #8190aa;
+  font-size: 12px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 25px;
+  background: #141c30;
+  border: 1px solid #26334b;
+  border-radius: 13px;
+}
+
+.tab {
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #a5b4cc;
+  font-weight: 650;
+}
+
+.tab:hover {
+  background: #202b43;
+  color: white;
+}
+
+.tab.active {
+  background: #6258ed;
+  color: white;
+}
+
+.panel {
+  min-width: 0;
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid #26334b;
+  border-radius: 16px;
+  background: #141c30;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.panel-header p {
+  margin: 7px 0 0;
+}
+
+.search-input {
+  width: min(300px, 100%);
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: #0b1020;
+  color: #f1f5f9;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+thead {
+  background: #202a40;
+}
+
+th, td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #29354b;
+  white-space: nowrap;
+}
+
+th {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+td {
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+tbody tr:hover {
+  background: #1a253a;
+}
+
+.event-name {
+  font-weight: 700;
+  color: #c4b5fd;
+}
+
+.pill {
+  display: inline-block;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: #252b4c;
+  color: #c7d2fe;
+  font-size: 11px;
+}
+
+.empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: #94a3b8;
+  line-height: 1.8;
+}
+
+.error {
+  margin-bottom: 22px;
+  padding: 16px;
+  border: 1px solid #7f1d1d;
+  border-radius: 12px;
+  background: #351923;
+  color: #fecaca;
+  line-height: 1.6;
+}
+
+.info {
+  margin-bottom: 20px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.session-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.session-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #10182a;
+}
+
+.session-card h4 {
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+  color: #c4b5fd;
+}
+
+.session-card p {
+  color: #a5b4cc;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.timeline {
+  display: grid;
+  gap: 0;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 14px;
+  padding-bottom: 25px;
+}
+
+.timeline-dot {
+  width: 11px;
+  height: 11px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #818cf8;
+  box-shadow: 0 0 0 5px #252b4c;
+}
+
+.timeline-item strong {
+  color: #e0e7ff;
+}
+
+.timeline-item p {
+  margin: 7px 0;
+  color: #a5b4cc;
+  overflow-wrap: anywhere;
+}
+
+.footer {
+  padding: 18px 0 6px;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+}
+
+.demo-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: 100%;
+  height: 100%;
+  background: #f5f7fb;
+}
+
+.demo-screen iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+@media (max-width: 1050px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .container {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .brand h1 {
+    font-size: 19px;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .status {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 18px;
+  }
+
+  .stat-value {
+    font-size: 29px;
+  }
+
+  .section-heading h2 {
+    font-size: 23px;
+  }
+
+  .tabs {
+    gap: 5px;
+  }
+
+  .tab {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .session-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-header {
+    align-items: flex-start;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+}
+`;
+
+const getSessionId = () => {
   const key = "user_analytics_dashboard_session";
 
   try {
     let id = sessionStorage.getItem(key);
 
     if (!id) {
-      id =
-        window.crypto?.randomUUID?.() ||
-        `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      id = window.crypto?.randomUUID?.() ||
+        `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       sessionStorage.setItem(key, id);
     }
@@ -23,111 +532,88 @@ function getDashboardSessionId() {
   } catch {
     return `session-${Date.now()}`;
   }
-}
+};
 
-function formatDate(value) {
+const getEventName = (event) =>
+  event?.eventType || event?.event || event?.type || "unknown_event";
+
+const getTime = (event) =>
+  event?.timestamp || event?.createdAt || event?.time || null;
+
+const formatDate = (value) => {
   if (!value) return "—";
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) return String(value);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleString();
+};
 
-  return date.toLocaleString();
-}
+const extractList = (data, key) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.[key])) return data[key];
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+};
 
-function getEventName(item) {
+function MetricCard({ title, value, icon, note }) {
   return (
-    item?.eventType ||
-    item?.event ||
-    item?.type ||
-    "unknown_event"
-  );
-}
-
-function getEventDetails(item) {
-  const details = item?.details;
-
-  if (details && typeof details === "object") {
-    return details;
-  }
-
-  return {};
-}
-
-function formatDetails(item) {
-  const details = getEventDetails(item);
-
-  const parts = [
-    details.productName && `Product: ${details.productName}`,
-    details.category && `Category: ${details.category}`,
-    details.quantity !== undefined && `Quantity: ${details.quantity}`,
-    details.total !== undefined && `Total: ₹${details.total}`,
-    details.orderId && `Order: ${details.orderId}`,
-    details.paymentMethod && `Payment: ${details.paymentMethod}`,
-    details.paymentStatus && `Status: ${details.paymentStatus}`,
-    details.query && `Search: ${details.query}`,
-    details.label && `Action: ${details.label}`
-  ].filter(Boolean);
-
-  return parts.join(" · ") || JSON.stringify(details);
-}
-
-function MetricCard({ title, value, subtitle, icon }) {
-  return (
-    <div className="stat-card">
+    <article className="stat-card">
       <div className="stat-top">
         <span className="stat-label">{title}</span>
         <span className="stat-icon">{icon}</span>
       </div>
-
-      <div className="stat-value">{value ?? 0}</div>
-      <div className="stat-caption">{subtitle}</div>
-    </div>
+      <div className="stat-value">{value}</div>
+      <div className="stat-note">{note}</div>
+    </article>
   );
-}
-
-function EmptyState({ children = "No data available yet." }) {
-  return <div className="empty-state">{children}</div>;
 }
 
 function EventTable({ events }) {
   if (!events.length) {
     return (
-      <EmptyState>
-        No activities recorded yet. Open Demo Store and perform some actions.
-      </EmptyState>
+      <div className="empty">
+        No activities recorded yet.
+        <br />
+        Open the Demo Store and perform some actions.
+      </div>
     );
   }
 
   return (
-    <div className="table-wrapper">
-      <table className="data-table">
+    <div className="table-wrap">
+      <table>
         <thead>
           <tr>
-            <th>Event</th>
-            <th>Activity Details</th>
+            <th>Event Type</th>
             <th>Page</th>
+            <th>Element / Details</th>
             <th>Session ID</th>
             <th>Timestamp</th>
           </tr>
         </thead>
-
         <tbody>
-          {events.map((item, index) => (
-            <tr key={item.id || item._id || `${getEventName(item)}-${index}`}>
-              <td>
-                <strong>{getEventName(item)}</strong>
-              </td>
-              <td>{formatDetails(item)}</td>
-              <td>{item.page || "—"}</td>
-              <td>
-                <span className="pill">
-                  {item.sessionId || "—"}
-                </span>
-              </td>
-              <td>{formatDate(item.timestamp || item.createdAt)}</td>
-            </tr>
-          ))}
+          {events.map((event, index) => {
+            const details =
+              event.details && typeof event.details === "object"
+                ? JSON.stringify(event.details)
+                : event.element || event.details || "—";
+
+            return (
+              <tr key={event._id || event.id || `${getEventName(event)}-${index}`}>
+                <td>
+                  <span className="event-name">{getEventName(event)}</span>
+                </td>
+                <td>{event.page || "—"}</td>
+                <td>{String(details)}</td>
+                <td>
+                  <span className="pill">{event.sessionId || "—"}</span>
+                </td>
+                <td>{formatDate(getTime(event))}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -146,55 +632,46 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [dashboardSessionId] = useState(getDashboardSessionId);
-
-  const openDemo = useCallback(() => {
-    setShowDemo(true);
-    setActiveTab("demo");
-  }, []);
+  const [sessionId] = useState(getSessionId);
 
   const refreshDashboard = useCallback(async () => {
     try {
-      const [statsResponse, eventsResponse, sessionsResponse] =
-        await Promise.all([
-          fetch(`${API}/api/events/stats`),
-          fetch(`${API}/api/events?limit=500`),
-          fetch(`${API}/api/sessions`)
-        ]);
+      const endpoints = [
+        `${API}/api/events/stats`,
+        `${API}/api/events?limit=500`,
+        `${API}/api/sessions`
+      ];
 
-      if (!statsResponse.ok || !eventsResponse.ok || !sessionsResponse.ok) {
-        throw new Error(
-          "Dashboard API request failed. Check whether the backend is running."
-        );
-      }
+      const responses = await Promise.all(
+        endpoints.map(async (url) => {
+          const response = await fetch(url);
 
-      const statsData = await statsResponse.json();
-      const eventsData = await eventsResponse.json();
-      const sessionsData = await sessionsResponse.json();
+          if (!response.ok) {
+            throw new Error(`${url} returned HTTP ${response.status}`);
+          }
 
-      setStats(statsData || {});
+          return response.json();
+        })
+      );
 
-      const eventList = Array.isArray(eventsData)
-        ? eventsData
-        : eventsData.events || eventsData.data || [];
+      const [statsData, eventsData, sessionsData] = responses;
 
-      const sessionList = Array.isArray(sessionsData)
-        ? sessionsData
-        : sessionsData.sessions || sessionsData.data || [];
+      const eventList = extractList(eventsData, "events");
+      const sessionList = extractList(sessionsData, "sessions");
 
-      // Newest events first.
       eventList.sort((a, b) => {
-        const dateA = new Date(a.timestamp || a.createdAt || 0).getTime();
-        const dateB = new Date(b.timestamp || b.createdAt || 0).getTime();
+        const dateA = new Date(getTime(a) || 0).getTime();
+        const dateB = new Date(getTime(b) || 0).getTime();
         return dateB - dateA;
       });
 
+      setStats(statsData || {});
       setEvents(eventList);
       setSessions(sessionList);
       setError("");
     } catch (err) {
       setError(
-        `${err.message}. Make sure the backend is running at ${API}.`
+        `${err.message}. Check that the backend is running at ${API} and that the API routes are available.`
       );
     } finally {
       setLoading(false);
@@ -204,330 +681,288 @@ export default function App() {
   useEffect(() => {
     refreshDashboard();
 
-    const intervalId = setInterval(refreshDashboard, 3000);
+    const timer = window.setInterval(refreshDashboard, 10000);
 
-    return () => clearInterval(intervalId);
+    return () => window.clearInterval(timer);
   }, [refreshDashboard]);
 
-  // Receive the Back-to-Dashboard message from demo.html inside the iframe.
   useEffect(() => {
-    function handleDemoMessage(event) {
+    const handleMessage = (event) => {
       if (event.origin !== API) return;
 
       if (event.data?.type === "RETURN_TO_DASHBOARD") {
+        setShowDemo(false);
         setActiveTab("overview");
         refreshDashboard();
       }
-    }
-
-    window.addEventListener("message", handleDemoMessage);
-
-    return () => {
-      window.removeEventListener("message", handleDemoMessage);
     };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => window.removeEventListener("message", handleMessage);
   }, [refreshDashboard]);
-
-  const filteredEvents = events.filter((item) => {
-    const details = formatDetails(item);
-
-    const searchableText = [
-      getEventName(item),
-      item.page || "",
-      item.sessionId || "",
-      details
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return searchableText.includes(search.toLowerCase());
-  });
-
-  const filteredSessions = sessions.filter((session) => {
-    const searchableText = [
-      session.sessionId || "",
-      ...(session.pages || []),
-      ...(session.eventTypes || [])
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return searchableText.includes(search.toLowerCase());
-  });
 
   const pageViews =
     stats.pageViews ??
-    events.filter((item) => getEventName(item) === "page_view").length;
+    stats.totalPageViews ??
+    events.filter((event) =>
+      ["page_view", "pageview", "page view"].includes(
+        getEventName(event).toLowerCase()
+      )
+    ).length;
 
   const clicks =
     stats.clicks ??
-    events.filter((item) => getEventName(item) === "click").length;
+    stats.totalClicks ??
+    events.filter((event) =>
+      getEventName(event).toLowerCase().includes("click")
+    ).length;
 
-  const totalEvents = stats.totalEvents ?? events.length;
+  const totalEvents =
+    stats.totalEvents ?? stats.total ?? events.length;
 
-  const totalSessions = stats.totalSessions ?? sessions.length;
+  const totalSessions =
+    stats.totalSessions ?? stats.sessions ?? sessions.length;
 
-  const tabItems = [
-    { id: "overview", label: "Overview" },
-    { id: "sessions", label: "Sessions View" },
-    { id: "events", label: "Recent Events" },
-    { id: "timestamps", label: "Timestamps" },
-    { id: "demo", label: "Demo Store" }
+  const filteredEvents = events.filter((event) => {
+    const text = [
+      getEventName(event),
+      event.page,
+      event.element,
+      event.sessionId,
+      JSON.stringify(event.details || {})
+    ].join(" ").toLowerCase();
+
+    return text.includes(search.toLowerCase());
+  });
+
+  const filteredSessions = sessions.filter((session) => {
+    const text = [
+      session.sessionId,
+      ...(Array.isArray(session.pages) ? session.pages : []),
+      ...(Array.isArray(session.eventTypes) ? session.eventTypes : [])
+    ].join(" ").toLowerCase();
+
+    return text.includes(search.toLowerCase());
+  });
+
+  const tabs = [
+    { id: "overview", label: "▦ Overview" },
+    { id: "events", label: "◉ All Events" },
+    { id: "sessions", label: "◎ Sessions" },
+    { id: "timestamps", label: "◷ Timestamps" }
   ];
 
+  if (showDemo) {
+    return (
+      <>
+        <style>{styles}</style>
+        <div className="demo-screen">
+          <iframe
+            title="ShopEase Demo Store"
+            src={`${API}/shop?sessionId=${encodeURIComponent(sessionId)}`}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{
+              position: "fixed",
+              left: 12,
+              bottom: 12,
+              zIndex: 10000
+            }}
+            onClick={() => {
+              setShowDemo(false);
+              refreshDashboard();
+            }}
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
-    <div className="dashboard">
-      <div className="dashboard-container">
-        <header className="dashboard-header">
-          <div className="dashboard-brand">
-            <div className="brand-icon">📊</div>
-            <div>
-              <h1>User Analytics Dashboard</h1>
-              <p className="panel-subtitle">
-                Monitor shopping activity in real time
-              </p>
+    <>
+      <style>{styles}</style>
+
+      <div className="dashboard">
+        <main className="container">
+          <header className="header">
+            <div className="brand">
+              <div className="brand-icon">📊</div>
+              <div>
+                <h1>InsightFlow</h1>
+                <p className="subtitle">User Analytics Dashboard</p>
+              </div>
             </div>
-          </div>
 
-          <div className="header-actions">
-            <span className="dashboard-status">
-              <span className="status-dot" />
-              {error ? "Connection issue" : "Live monitoring"}
-            </span>
+            <div className="header-actions">
+              <div className="status">
+                <span
+                  className="status-dot"
+                  style={{ background: error ? "#f87171" : "#34d399" }}
+                />
+                {error ? "Connection Issue" : "Live Monitoring"}
+              </div>
 
-            <button
-              className="secondary-button"
-              onClick={refreshDashboard}
-            >
-              ↻ Refresh
-            </button>
+              <button
+                className="btn"
+                type="button"
+                onClick={refreshDashboard}
+                disabled={loading}
+              >
+                ↻ Refresh
+              </button>
 
-            <button
-              className="primary-button"
-              onClick={openDemo}
-            >
-              🛍️ Open Demo Store
-            </button>
-          </div>
-        </header>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => setShowDemo(true)}
+              >
+                🛍 Open Demo Store
+              </button>
+            </div>
+          </header>
 
-        {error && (
-          <div className="error-state">
-            <strong>Backend connection problem</strong>
-            <p>{error}</p>
-          </div>
-        )}
-
-        <section className="stats-grid">
-          <MetricCard
-            title="Total Events"
-            value={totalEvents}
-            subtitle="Recorded activities"
-            icon="📈"
-          />
-
-          <MetricCard
-            title="Sessions"
-            value={totalSessions}
-            subtitle="Tracked sessions"
-            icon="👥"
-          />
-
-          <MetricCard
-            title="Page Views"
-            value={pageViews}
-            subtitle="Pages visited"
-            icon="👁️"
-          />
-
-          <MetricCard
-            title="Clicks"
-            value={clicks}
-            subtitle="Recorded clicks"
-            icon="🖱️"
-          />
-        </section>
-
-        <nav className="dashboard-tabs" aria-label="Dashboard views">
-          {tabItems.map((tab) => (
-            <button
-              key={tab.id}
-              className={`tab-button ${
-                activeTab === tab.id ? "active" : ""
-              }`}
-              onClick={() => {
-                if (tab.id === "demo") {
-                  openDemo();
-                } else {
-                  setActiveTab(tab.id);
-                }
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        <main className="tab-content">
-          {loading && events.length === 0 && (
-            <div className="panel">
-              <EmptyState>Loading analytics data...</EmptyState>
+          {error && (
+            <div className="error">
+              <strong>Backend connection problem</strong>
+              <div>{error}</div>
             </div>
           )}
+
+          <section className="section-heading">
+            <div>
+              <h2>Overview Dashboard</h2>
+              <p className="subtitle">
+                Your website activity at a glance.
+              </p>
+            </div>
+          </section>
+
+          <section className="stats-grid">
+            <MetricCard
+              title="Total Events"
+              value={totalEvents}
+              icon="📈"
+              note="Live recorded data"
+            />
+            <MetricCard
+              title="Page Views"
+              value={pageViews}
+              icon="👁"
+              note="Pages visited"
+            />
+            <MetricCard
+              title="Clicks & Interactions"
+              value={clicks}
+              icon="🖱"
+              note="User interactions"
+            />
+            <MetricCard
+              title="Sessions"
+              value={totalSessions}
+              icon="👥"
+              note="Tracked sessions"
+            />
+          </section>
+
+          <nav className="tabs" aria-label="Analytics navigation">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`tab ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setSearch("");
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
 
           {activeTab === "overview" && (
             <>
-              <div className="section-header">
-                <div>
-                  <h2>Analytics Overview</h2>
-                  <p className="panel-subtitle">
-                    Your latest activities and session information
-                  </p>
-                </div>
-
-                <button
-                  className="primary-button"
-                  onClick={openDemo}
-                >
-                  Start Shopping Demo →
-                </button>
-              </div>
-
               <section className="panel">
                 <div className="panel-header">
-                  <h3>Recent Activities</h3>
+                  <div>
+                    <h3>Activity Breakdown</h3>
+                    <p className="subtitle">
+                      Summary of the tracked visitor activity
+                    </p>
+                  </div>
                   <button
-                    className="secondary-button"
+                    className="btn"
+                    type="button"
                     onClick={() => setActiveTab("events")}
                   >
-                    View All
+                    View All →
                   </button>
                 </div>
 
-                <EventTable events={events.slice(0, 10)} />
+                <div className="stats-grid" style={{ marginBottom: 0 }}>
+                  <div>
+                    <strong>{pageViews}</strong>
+                    <p className="subtitle">Page Views</p>
+                  </div>
+                  <div>
+                    <strong>{clicks}</strong>
+                    <p className="subtitle">Clicks & Interactions</p>
+                  </div>
+                  <div>
+                    <strong>{totalSessions}</strong>
+                    <p className="subtitle">Sessions</p>
+                  </div>
+                  <div>
+                    <strong>
+                      {stats.demoCheckouts ?? stats.completedCheckouts ?? 0}
+                    </strong>
+                    <p className="subtitle">Demo Checkouts Completed</p>
+                  </div>
+                </div>
               </section>
 
               <section className="panel">
                 <div className="panel-header">
-                  <h3>Recent Sessions</h3>
+                  <div>
+                    <h3>Recent Activity</h3>
+                    <p className="subtitle">
+                      Latest events received from the tracking system
+                    </p>
+                  </div>
                   <button
-                    className="secondary-button"
-                    onClick={() => setActiveTab("sessions")}
+                    className="btn"
+                    type="button"
+                    onClick={() => setActiveTab("events")}
                   >
-                    Sessions View
+                    View all →
                   </button>
                 </div>
 
-                {sessions.length === 0 ? (
-                  <EmptyState>No sessions recorded yet.</EmptyState>
+                {loading && events.length === 0 ? (
+                  <div className="empty">Loading analytics data...</div>
                 ) : (
-                  <div className="content-grid">
-                    {sessions.slice(0, 6).map((session, index) => (
-                      <div
-                        className="session-card"
-                        key={session.sessionId || index}
-                      >
-                        <strong>
-                          Session {session.sessionId || index + 1}
-                        </strong>
-
-                        <div className="session-metrics">
-                          <span>
-                            Events: {session.eventCount ?? session.events?.length ?? 0}
-                          </span>
-
-                          <span>
-                            Pages: {session.pageCount ?? session.pages?.length ?? 0}
-                          </span>
-                        </div>
-
-                        <p className="panel-subtitle">
-                          Last seen: {formatDate(session.lastSeen)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                  <EventTable events={events.slice(0, 10)} />
                 )}
               </section>
             </>
-          )}
-
-          {activeTab === "sessions" && (
-            <section className="panel">
-              <div className="panel-header">
-                <div>
-                  <h2>Sessions View</h2>
-                  <p className="panel-subtitle">
-                    Explore grouped user sessions
-                  </p>
-                </div>
-
-                <input
-                  className="filter-input"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search sessions..."
-                />
-              </div>
-
-              {filteredSessions.length === 0 ? (
-                <EmptyState>No matching sessions found.</EmptyState>
-              ) : (
-                <div className="content-grid">
-                  {filteredSessions.map((session, index) => (
-                    <article
-                      className="session-card"
-                      key={session.sessionId || index}
-                    >
-                      <h3>{session.sessionId || `Session ${index + 1}`}</h3>
-
-                      <div className="session-metrics">
-                        <span>
-                          Events: {session.eventCount ?? session.events?.length ?? 0}
-                        </span>
-
-                        <span>
-                          Page views: {session.pageCount ?? session.pages?.length ?? 0}
-                        </span>
-                      </div>
-
-                      <p>
-                        <strong>First seen:</strong>{" "}
-                        {formatDate(session.firstSeen)}
-                      </p>
-
-                      <p>
-                        <strong>Last seen:</strong>{" "}
-                        {formatDate(session.lastSeen)}
-                      </p>
-
-                      <p>
-                        <strong>Pages:</strong>{" "}
-                        {(session.pages || []).join(", ") || "—"}
-                      </p>
-
-                      <p>
-                        <strong>Event types:</strong>{" "}
-                        {(session.eventTypes || []).join(", ") || "—"}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
           )}
 
           {activeTab === "events" && (
             <section className="panel">
               <div className="panel-header">
                 <div>
-                  <h2>Recent Events</h2>
-                  <p className="panel-subtitle">
-                    Search page views, cart actions and payment events
+                  <h3>All Events</h3>
+                  <p className="subtitle">
+                    Search and review recorded activities
                   </p>
                 </div>
-
                 <input
-                  className="filter-input"
+                  className="search-input"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search events..."
@@ -538,18 +973,57 @@ export default function App() {
             </section>
           )}
 
+          {activeTab === "sessions" && (
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h3>Sessions</h3>
+                  <p className="subtitle">
+                    Review grouped visitor sessions
+                  </p>
+                </div>
+                <input
+                  className="search-input"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search sessions..."
+                />
+              </div>
+
+              {filteredSessions.length === 0 ? (
+                <div className="empty">
+                  {loading ? "Loading sessions..." : "No sessions found."}
+                </div>
+              ) : (
+                <div className="session-grid">
+                  {filteredSessions.map((session, index) => (
+                    <article
+                      className="session-card"
+                      key={session.sessionId || session._id || index}
+                    >
+                      <h4>{session.sessionId || `Session ${index + 1}`}</h4>
+                      <p>Events: {session.eventCount ?? session.events?.length ?? 0}</p>
+                      <p>Pages: {session.pageCount ?? session.pages?.length ?? 0}</p>
+                      <p>First seen: {formatDate(session.firstSeen)}</p>
+                      <p>Last seen: {formatDate(session.lastSeen)}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           {activeTab === "timestamps" && (
             <section className="panel">
               <div className="panel-header">
                 <div>
-                  <h2>Activity Timeline</h2>
-                  <p className="panel-subtitle">
-                    Activities arranged from newest to oldest
+                  <h3>Activity Timeline</h3>
+                  <p className="subtitle">
+                    Events ordered from newest to oldest
                   </p>
                 </div>
-
                 <input
-                  className="filter-input"
+                  className="search-input"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search timeline..."
@@ -557,91 +1031,33 @@ export default function App() {
               </div>
 
               {filteredEvents.length === 0 ? (
-                <EmptyState>No matching activity found.</EmptyState>
+                <div className="empty">No activities found.</div>
               ) : (
-                <div className="timestamp-list">
-                  {filteredEvents.map((item, index) => (
-                    <div
-                      className="timestamp-item"
-                      key={item.id || item._id || index}
+                <div className="timeline">
+                  {filteredEvents.map((event, index) => (
+                    <article
+                      className="timeline-item"
+                      key={event._id || event.id || index}
                     >
-                      <div className="timeline-marker" />
-
+                      <div className="timeline-dot" />
                       <div>
-                        <strong>{getEventName(item)}</strong>
-                        <p>{formatDetails(item)}</p>
-                        <p className="timestamp-time">
-                          {formatDate(item.timestamp || item.createdAt)}
-                        </p>
-                        <p className="panel-subtitle">
-                          Session: {item.sessionId || "—"}
-                        </p>
+                        <strong>{getEventName(event)}</strong>
+                        <p>Page: {event.page || "—"}</p>
+                        <p>Session: {event.sessionId || "—"}</p>
+                        <p>{formatDate(getTime(event))}</p>
                       </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               )}
             </section>
           )}
 
-          {activeTab === "demo" && showDemo && (
-            <section
-              className="panel"
-              style={{ padding: 0, overflow: "hidden" }}
-            >
-              <div
-                className="panel-header"
-                style={{
-                  padding: "16px 20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap"
-                }}
-              >
-                <div>
-                  <h2>ShopEase Demo Store</h2>
-                  <p className="panel-subtitle">
-                    Shop, checkout and return here to view your activities.
-                  </p>
-                </div>
-
-                <button
-                  className="secondary-button"
-                  onClick={() => {
-                    setActiveTab("overview");
-                    refreshDashboard();
-                  }}
-                >
-                  View Analytics
-                </button>
-              </div>
-
-              <iframe
-                title="ShopEase Demo Store"
-                src={`${DEMO_URL}?sessionId=${encodeURIComponent(
-                  dashboardSessionId
-                )}`}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  height: "78vh",
-                  minHeight: 620,
-                  border: 0,
-                  background: "#f5f7fb"
-                }}
-              />
-            </section>
-          )}
+          <footer className="footer">
+            InsightFlow · MERN Stack User Analytics · Auto-refresh every 10 seconds
+          </footer>
         </main>
-
-        <footer style={{ padding: "24px 0", textAlign: "center" }}>
-          <p className="panel-subtitle">
-            User Analytics Dashboard · Auto-refreshes every 3 seconds
-          </p>
-        </footer>
       </div>
-    </div>
+    </>
   );
 }

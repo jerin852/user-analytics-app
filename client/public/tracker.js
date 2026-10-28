@@ -1,5 +1,5 @@
 (function () {
-  const API_URL = "http://localhost:5000/api/events";
+  const API_URL = "https://user-analytics-app-xm4s.onrender.com/api/events";
   const SESSION_KEY = "user_analytics_session_id";
 
   function createId() {

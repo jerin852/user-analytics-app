@@ -1,10 +1,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
-
-const API = "http://localhost:5000/api";
-const DEMO_URL = "http://localhost:5000/shop";
-
+const API = "https://user-analytics-app-xm4s.onrender.com/api";
+const DEMO_URL = "https://user-analytics-app-xm4s.onrender.com/shop";
 const menus = [
   { id: "overview", label: "Overview", icon: "▦" },
   { id: "pages", label: "Page Views", icon: "◉" },

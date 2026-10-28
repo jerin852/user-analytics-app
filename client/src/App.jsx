@@ -1,7 +1,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 
-const API = "http://localhost:5000";
+const API = "https://user-analytics-app-xm4s.onrender.com";
 
 const styles = `
 * {

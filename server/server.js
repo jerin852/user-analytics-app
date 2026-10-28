@@ -1,3 +1,4 @@
+
 require("dns").setServers(["8.8.8.8", "8.8.4.4"]);
 require("dotenv").config();
 
@@ -10,23 +11,41 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const PUBLIC_DIR = path.join(__dirname, "public");
 
+// Frontend URLs allowed to access this backend
 const FRONTEND_ORIGINS = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "https://user-analytics-app-sza2.vercel.app",
   "https://user-analytics-app-tan.vercel.app"
 ];
 
-// Middleware
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || FRONTEND_ORIGINS.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(null, false);
-  },
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+// CORS must be registered before all API routes
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || FRONTEND_ORIGINS.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error(`CORS blocked origin: ${origin}`)
+      );
+    },
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS"
+    ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization"
+    ],
+    optionsSuccessStatus: 204
+  })
+);
 
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true, limit: "100kb" }));
@@ -59,62 +78,65 @@ const EVENT_TYPES = [
 ];
 
 // MongoDB event schema
-const eventSchema = new mongoose.Schema({
-  eventType: {
-    type: String,
-    enum: EVENT_TYPES,
-    required: true,
-    index: true
+const eventSchema = new mongoose.Schema(
+  {
+    eventType: {
+      type: String,
+      enum: EVENT_TYPES,
+      required: true,
+      index: true
+    },
+    sessionId: {
+      type: String,
+      required: true,
+      index: true
+    },
+    page: {
+      type: String,
+      default: "/"
+    },
+    element: {
+      type: String,
+      default: null
+    },
+    sectionId: {
+      type: String,
+      default: null
+    },
+    details: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+    x: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: null
+    },
+    y: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: null
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+      index: true
+    }
   },
-  sessionId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  page: {
-    type: String,
-    default: "/"
-  },
-  element: {
-    type: String,
-    default: null
-  },
-  sectionId: {
-    type: String,
-    default: null
-  },
-  details: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
-  },
-  x: {
-    type: Number,
-    min: 0,
-    max: 1,
-    default: null
-  },
-  y: {
-    type: Number,
-    min: 0,
-    max: 1,
-    default: null
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now,
-    index: true
+  {
+    timestamps: true,
+    strict: true
   }
-}, {
-  timestamps: true,
-  strict: true
-});
+);
 
 const Event =
   mongoose.models.Event ||
   mongoose.model("Event", eventSchema);
 
-// Temporary memory storage if MongoDB is unavailable.
-// Data in memory will be lost when the server restarts.
+// Temporary in-memory storage if MongoDB is unavailable.
+// Memory data is lost whenever the server restarts.
 let memoryEvents = [];
 let databaseMode = "memory fallback";
 
@@ -184,11 +206,19 @@ async function getEvents(filter = {}, limit = 500) {
       return false;
     }
 
-    if (filter.x && filter.x.$ne === null && event.x == null) {
+    if (
+      filter.x &&
+      filter.x.$ne === null &&
+      event.x == null
+    ) {
       return false;
     }
 
-    if (filter.y && filter.y.$ne === null && event.y == null) {
+    if (
+      filter.y &&
+      filter.y.$ne === null &&
+      event.y == null
+    ) {
       return false;
     }
 
@@ -282,6 +312,18 @@ app.get("/", (_req, res) => {
 });
 
 // Health check
+app.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    database:
+      mongoose.connection.readyState === 1
+        ? "connected"
+        : databaseMode,
+    time: new Date().toISOString()
+  });
+});
+
+// Keep the existing API health route too
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
@@ -293,7 +335,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// Demo Store route
+// Demo store
 app.get("/shop", (_req, res) => {
   res.sendFile(
     path.join(PUBLIC_DIR, "demo.html"),
@@ -566,6 +608,24 @@ app.get("/api/events/heatmap", async (req, res) => {
       error: "Failed to fetch heatmap"
     });
   }
+});
+
+// Handle unknown API endpoints
+app.use("/api", (_req, res) => {
+  res.status(404).json({
+    error: "API route not found"
+  });
+});
+
+// Error handler
+app.use((error, _req, res, _next) => {
+  console.error("Server error:", error.message);
+
+  if (res.headersSent) return;
+
+  res.status(500).json({
+    error: "Internal server error"
+  });
 });
 
 // Start server; use memory storage if MongoDB is unavailable
